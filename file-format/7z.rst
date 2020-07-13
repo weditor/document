@@ -2,4 +2,7 @@
 7Z(TODO)
 ###################################
 
+源码: 
+* **CPP/7zip/Archive/7z/7zIn.cpp** , CInArchive::ReadHeader
+* **CPP/7zip/Archive/7z/7zIn.cpp** , COutArchive::WriteHeader
 
