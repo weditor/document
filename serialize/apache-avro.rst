@@ -51,7 +51,10 @@ schema 案例
         {"name": "b", "type": "string"}
     ]
 
-如果需要序列化的数据是 ``{"a": 27, "b": "foo"}`` , 存储的格式如下:
+.. image:: /_static/images/serialize/avro-example.svg
+
+
+上图流程中，需要序列化的数据是 ``{"a": 27, "b": "foo"}`` , 存储的格式如下:
 
     0x36 0x06 f o o
 

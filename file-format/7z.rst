@@ -2,8 +2,11 @@
 7Z
 ###################################
 
+.. image:: /_static/images/file/7z-format.svg
+
 相关资源
 ==========================
+
 
 官网: https://www.7-zip.org/
 
