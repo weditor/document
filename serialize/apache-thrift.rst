@@ -49,6 +49,7 @@ Protocol 实现代码位于 thrift github 仓库的 lib/cpp/src/thrift/protocol/
 
 .. image:: /_static/images/serialize/thrift-compact-2.jpg
 
+
 对于 string、binary ，采用 ``length data`` 的编码方式。
 
 而 map、list、set 属于同一个类别(collection)，所以还有一个子类别来说明他们具体是那个类型。
@@ -57,3 +58,23 @@ Protocol 实现代码位于 thrift github 仓库的 lib/cpp/src/thrift/protocol/
 
 .. image:: /_static/images/serialize/thrift-compact-collection.jpg
 
+附 ZigZag 源码:
+
+.. code-block:: cpp
+
+    /**
+    * Convert l into a zigzag long. This allows negative numbers to be
+    * represented compactly as a varint.
+    */
+    template <class Transport_>
+    uint64_t TCompactProtocolT<Transport_>::i64ToZigzag(const int64_t l) {
+        return (static_cast<uint64_t>(l) << 1) ^ (l >> 63);
+    }
+
+    /**
+    * Convert from zigzag long to long.
+    */
+    template <class Transport_>
+    int64_t TCompactProtocolT<Transport_>::zigzagToI64(uint64_t n) {
+        return (n >> 1) ^ static_cast<uint64_t>(-static_cast<int64_t>(n & 1));
+    }

@@ -1,8 +1,133 @@
 ###################################
-7Z(TODO)
+7Z
 ###################################
 
-源码: 
-* **CPP/7zip/Archive/7z/7zIn.cpp** , CInArchive::ReadHeader
-* **CPP/7zip/Archive/7z/7zIn.cpp** , COutArchive::WriteHeader
+相关资源
+==========================
+
+官网: https://www.7-zip.org/
+
+SDK & Document: https://www.7-zip.org/sdk.html
+
+本文重点源码: 
+
+    * **CPP/7zip/Archive/7z/7zIn.cpp** , CInArchive::ReadHeader
+    * **CPP/7zip/Archive/7z/7zOut.cpp** , COutArchive::WriteHeader
+
+格式介绍
+==============================
+
+下面是 7Z 数据段组织结构，为了便于理解，简化了 Header 部分。
+
+::
+
+    SignatureHeader
+    [PackedStreams]
+    [PackedStreamsForHeaders]
+    [Header]
+
+
+
+其中 Header 结构如下, 精简了很多无关的部分。
+
+::
+
+    {
+        ArchiveProperties
+        AdditionalStreams
+        MainStreamsInfo
+        {
+            PackInfo
+            {
+                PackPos
+                NumPackStreams // 文件数量
+                Sizes[NumPackStreams] // 每个文件压缩后大小
+                CRCs[NumPackStreams] // 每个文件校验码
+            }
+            CodersInfo
+            SubStreamsInfo
+            {
+                NumUnPackStreamsInFolders[NumFolders];
+                UnPackSizes[] // 压缩前大小
+                CRCs[]
+            }
+        }
+
+        FilesInfo  // 文件名信息
+        {
+            NumFiles
+            Properties[]
+            {
+                ID
+                Size
+                Data
+            }
+        }
+    }
+
+
+7Z 的结构类似于 Zip, 元数据也是存放在文件末尾, 并且保留了压缩包中所有文件的信息。
+7Z 是一种更加紧凑的压缩结构, 但也丢失了很多文件原始信息，如权限等，所以不适合用于文件备份。
+
+7Z 文档写的比较详细， 但是它更多的算是一个软件，而不是一种格式规范。
+因为内部实现是很多压缩算法合集, 而且针对资源消耗做了很多定向优化。
+(所以咱也没看懂文档写的什么)
+
+等以后有空研究它的实现细节，再继续补充。
+
+构造 Header 的部分代码截取如下:
+
+.. code-block:: cpp
+
+    void COutArchive::WriteHeader(
+        const CArchiveDatabaseOut &db,
+        UInt64 &headerOffset)
+    {
+        WriteByte(NID::kHeader);
+
+        // Archive Properties
+        if (db.Folders.Size() > 0)
+        {
+            // 写入 MainStreamsInfo.PackInfo
+            WriteByte(NID::kMainStreamsInfo);
+            WritePackInfo(0, db.PackSizes, db.PackCRCs);
+            // 写入 MainStreamsInfo.CodersInfo
+            WriteUnpackInfo(db.Folders, (const COutFolders &)db);
+
+            ... ...
+
+            // 写入 MainStreamsInfo.SubStreamsInfo
+            WriteSubStreamsInfo(db.Folders, (const COutFolders &)db, unpackSizes, digests);
+            WriteByte(NID::kEnd);
+        }
+
+
+        WriteByte(NID::kFilesInfo);
+        WriteNumber(db.Files.Size());
+
+        {
+            /* ---------- Empty Streams ---------- */
+            ... ...
+        }
+
+
+        {
+            /* ---------- Names ---------- */
+            ... ...
+            WriteByte(NID::kName);
+            WriteNumber(namesDataSize);
+            WriteByte(0);
+            FOR_VECTOR (i, db.Files)
+            {
+                const UString &name = db.Names[i];
+                for (unsigned t = 0; t <= name.Len(); t++)
+                {
+                    wchar_t c = name[t];
+                    WriteByte((Byte)c);
+                    WriteByte((Byte)(c >> 8));
+                }
+            }
+            
+        }
+    }
 

@@ -13,4 +13,3 @@
     ./zip.rst
     ./7z.rst
     ./sqlite.rst
-    ./riegeli.rst
