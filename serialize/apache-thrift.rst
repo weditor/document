@@ -1,6 +1,8 @@
 
+################################
 Apache Thrift
-=================================
+################################
+
 * 官网: http://thrift.apache.org/
 * github: https://github.com/apache/thrift/
 
@@ -22,7 +24,7 @@ Protocol 实现代码位于 thrift github 仓库的 lib/cpp/src/thrift/protocol/
 下面稍微介绍下二进制编码、紧凑二进制编码。
 
 简单二进制编码
----------------------------
+===================================
 
 实现代码:  lib/cpp/src/thrift/protocol/TBinaryProtocol.tcc 
 
@@ -35,11 +37,14 @@ Protocol 实现代码位于 thrift github 仓库的 lib/cpp/src/thrift/protocol/
 可以看到, 直接取了数据内存的 8 byte 写进去了(int64 占8byte内存)。
 
 紧凑二进制编码
-----------------------------
+===================================
 
 实现代码:  lib/cpp/src/thrift/protocol/TCompactProtocol.tcc 
 
 紧凑编码中对数值的编码借鉴了 Protobuf：
+
+varint
+----------------
 
 1. 如果数值类型是 double、float 等类型，先转换为 int 类, 
 2. 对 int 类进行 zig-zag 编码。
@@ -49,16 +54,27 @@ Protocol 实现代码位于 thrift github 仓库的 lib/cpp/src/thrift/protocol/
 
 .. image:: /_static/images/serialize/thrift-compact-2.jpg
 
+string
+----------------------
 
 对于 string、binary ，采用 ``length data`` 的编码方式。
 
-而 map、list、set 属于同一个类别(collection)，所以还有一个子类别来说明他们具体是那个类型。
-编码方式是 ``subtype length data`` 。 collection 还有另外一个处理，如果 length <= 14，
+collection
+------------------------------
+
+在紧凑编码中， map、list、set 统称为 collection 。
+
+编码方式是 ``subtype length data`` ， subType 字段用于说明具体是哪个类型 。 
+
+collection 还有另外一个处理，如果 length <= 14，
 则省略 1 字节，直接把 length 写到 subtype 里面, 这一点很像 MessagePack 。
 
 .. image:: /_static/images/serialize/thrift-compact-collection.jpg
 
-附 ZigZag 源码:
+附 
+=============================
+
+ZigZag 源码
 
 .. code-block:: cpp
 

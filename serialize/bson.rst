@@ -10,7 +10,7 @@ BSON
 BSON 是 MongoDB 文档的存储格式。
 
 和 Json 一样, BSON 也是一种 schema-less 的序列化格式。
-如果不追求数据的可阅读性, 还喜欢 Json 的灵活，可以选择 bson。
+如果不追求数据的可阅读性, 还喜欢 Json 的灵活， bson 可以作为一个候选。
 另外 bson 修改成本小，比 Json 效率高，扩充了 Json 类型, 支持 DateType、BinData 等。
 
 BSON 协议比较简单。见 http://bsonspec.org/spec.html 。
@@ -41,15 +41,15 @@ BSON 基础类型都是固定长度。
 变长类型
 -----------------------------------
 
-1. string: 变长类型和 protobuf 差不多, 普遍采用 `长度(int32) 数据...` 的方式编码
+1. string: 变长类型和 protobuf 差不多, 普遍采用 ``length+data`` 的方式编码
 2. cstring: cstring 是 c 风格字符串, 约定以 `\0` 作为字符串结尾, 不需要长度字段。
-3. binary: 二进制数据。 编码方式为  `长度(int32) 子类型(byte) 数据...` 
+3. binary: 二进制数据。 编码方式为  ``length(int32) subType(byte) data`` 
 
 key-value
 ------------------------
 key-value 格式是 json 特色格式, key 是字符串，value可以是多种类型。
 
-编码为: `value类型(byte) key(cstring) value`
+编码为: ``valueType(byte) key(cstring) value``
 
 总结
 --------------------------

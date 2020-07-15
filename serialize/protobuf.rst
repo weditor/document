@@ -28,8 +28,9 @@ proto schema 案例
         int32 result_per_page = 3;
     }
 
-字段后面的数字是 **Field Number** , 用于编码索引。最好将 1~15 的数值预留用于频繁访问的属性, 
-因为这个范围的 *Field Number* 编码后只需要 1 byte, 16~2047 耗费2字节，越大的 *Field Number* 编码后字节越多。
+字段后面的数字是 **Field Number** , 用于编码索引，其范围为 1~(2^29 - 1)。
+推荐将 1~15 范围的数值预留用于频繁访问的属性, 这个范围的 *Field Number* 进行 Varint 
+编码后只需要 1 字节, 16~2047 耗费 2 字节，越大的 *Field Number* 编码后字节越多。
 
 probobuf 编码
 =================================
@@ -57,11 +58,6 @@ probobuf 编码
 
 上图表示主类型为0(Varint)， Field Number 为 2 。
 
-定长类型
-
-    当 type 字段是定常类型, 只需要从后面取固定长度字节解释为对应类型，
-    1、5 两种主类型都是定常类型。
-
 变长类型
 
     这里的变长类型特指变长数值 - Varint 。 Varint 数值区域中每个 byte 首位标识后面还有没有内容(此标识即 msb)。
@@ -73,6 +69,11 @@ probobuf 编码
     int32 类型的 -1 二进制是 ``0xffffffff`` ，由于补码的特性，绝对值很小的负数有效位非常多。
     也许你已经猜到了，对于这个小整数，使用 Varint 编码却需要占据 5 字节。
     所以，对于有符号整数， Protobuf 先采用 ZigZag 映射为无符号整数，再进行编码。
+
+定长类型
+
+    当 type 字段是定常类型, 只需要从后面取固定长度字节解释为对应类型，
+    1、5 两种主类型都是定常类型。
 
 指定长度
 
@@ -92,15 +93,15 @@ Optional & Repeated
 schema
 =============================
 
-Protobuf 编码规则并不复杂, 由于有 type 的概念，某种程度上可以理解为 schema-less, 
-实际使用过程中，protobuf 很依赖于 schema , 基于 schema 可以对相同的数据做出不同解释。
+Protobuf 编码有 type 的概念，但是作用很弱, 
+数据解释很依赖于 schema , 甚至基于 schema 可以对相同的数据做出不同解释。
 
 比如 protobuf 支持的 option、默认值、数组、结构体等概念，
-都是在 .proto 文件中描述的，还有涉及到向后兼容性等功能，proto 层承载了大量业务逻辑。
+都是在 .proto 文件中描述的，还有涉及到向后兼容性等功能， schema 层承载了大量业务逻辑。
 
 
 
-如以下proto (v1)::
+如以下 schema (v1)::
 
     message TestMessage {
         string query = 1;
@@ -115,19 +116,6 @@ Protobuf 编码规则并不复杂, 由于有 type 的概念，某种程度上可
 
 这种情况，如果 v2 客户端接收到 v1 协议数据, schema 层可以把这个字段补全。
 v1 客户端接收到 v2 协议的消息，也能正确忽略这个字段.
-
-再修改 page_number 字段 (v3)::
-
-    message TestMessage {
-        string query = 1;
-        repeated string page_number = 2;
-    }
-
-注意这里修改了 page_number 的属性(optional -> repeated), 这是合法的，
-从编码层来说， repeated 是 optional 的超集。
-
-这里有一个问题，当 v2 客户端接收到 v3 消息, 会得到多个值, 
-protobuf 定义了这种情况，以最后一个值为准，所以协议仍然是兼容的。
 
 
 总结
